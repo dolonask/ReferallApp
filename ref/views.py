@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import SubscriberSerializer
+from .serializers import SubscriberSerializer, InviteSerializer
 from .models import Subscriber
 
 
@@ -19,14 +19,42 @@ def subscriber(request):
 
     if request.method == 'POST':
         subs = request.data
-        q = Subscriber.objects.get(pk=subs['subs_id'])
+        subs_instance = Subscriber.objects.get(pk=subs.get('subs_id', None))
 
-        serializer = SubscriberSerializer(data=subs)
+        if subs_instance:
+            serializer = SubscriberSerializer(subs_instance, data=subs)
+        else:
+            serializer = SubscriberSerializer(data=subs)
 
         if serializer.is_valid():
-            print(serializer.validated_data.get('subs_id'))
             serializer.save()
-
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_201_CREATED)
+
+
+
+    # {
+    #       "sender":{
+    #         "subs_id":123,
+    #         "phone":"82736482"
+    #       },
+    #       "receiver":{
+    #                    "subs_id": 123,
+    #                    "phone": "82736482"
+    #                }
+    # }
+
+
+@api_view(['POST'])
+def invite(request):
+    if request.method == 'POST':
+        invite = request.data
+        serializer = InviteSerializer(data=invite)
+        if serializer.is_valid():
+            serializer.save()
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_201_CREATED)
+
+    return Response()
